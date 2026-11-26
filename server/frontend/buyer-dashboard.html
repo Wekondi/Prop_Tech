@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Purchases | PropTech</title>
+  <link rel="stylesheet" href="assets/css/global.css" />
+  <link rel="stylesheet" href="assets/css/dashboard.css" />
+</head>
+<body class="dash-body" data-page="buyer">
+  <header class="dash-header">
+    <h1>My Dashboard</h1>
+    <div>
+      <span class="who" id="who"></span>
+      <a class="btn secondary" href="catalog.html">Browse properties</a>
+      <button class="btn" id="logout" type="button">Log out</button>
+    </div>
+  </header>
+
+  <main class="dash-main">
+    <section aria-labelledby="purchases-title">
+      <h2 id="purchases-title" style="margin:0 0 12px">My purchase</h2>
+      <div id="purchases"></div>
+    </section>
+
+    <section class="card" aria-labelledby="docs-title">
+      <h2 id="docs-title">Documents</h2>
+      <div id="documents"></div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+</html>

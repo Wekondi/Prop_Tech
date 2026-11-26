@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log in | PropTech</title>
+  <link rel="stylesheet" href="assets/css/global.css" />
+  <style>
+    /* Page-specific styles; uses global.css variables where they exist, with fallbacks */
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+           background: var(--bg, #f4f6f8); font-family: var(--font, system-ui, sans-serif); margin: 0; }
+    .auth-card { width: 100%; max-width: 400px; margin: 16px; padding: 28px;
+                 background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+    .auth-card h1 { margin: 0 0 4px; font-size: 1.5rem; }
+    .auth-card p.sub { margin: 0 0 20px; color: #667; font-size: .95rem; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tabs button { flex: 1; padding: 10px; border: 1px solid #d5dae0; background: #fff;
+                   border-radius: 8px; cursor: pointer; font-size: .95rem; }
+    .tabs button.active { background: var(--primary, #1d6b4f); color: #fff; border-color: var(--primary, #1d6b4f); }
+    label { display: block; margin: 12px 0 4px; font-size: .9rem; font-weight: 600; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #d5dae0; border-radius: 8px;
+                    font-size: 1rem; box-sizing: border-box; }
+    .submit { width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 8px; cursor: pointer;
+              background: var(--primary, #1d6b4f); color: #fff; font-size: 1rem; }
+    .submit:disabled { opacity: .6; cursor: wait; }
+    .message { margin-top: 14px; padding: 10px; border-radius: 8px; font-size: .9rem; display: none; }
+    .message.error { display: block; background: #fdecea; color: #a12622; }
+    .message.ok { display: block; background: #e6f4ec; color: #1d6b4f; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main class="auth-card">
+    <h1>Welcome to PropTech</h1>
+    <p class="sub">Log in to track your purchase or manage your listings.</p>
+
+    <div class="tabs">
+      <button type="button" id="tab-login" class="active">Log in</button>
+      <button type="button" id="tab-signup">Sign up</button>
+    </div>
+
+    <form id="auth-form" novalidate>
+      <div id="name-group" class="hidden">
+        <label for="fullName">Full name</label>
+        <input id="fullName" type="text" autocomplete="name" />
+      </div>
+
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" minlength="6" required />
+
+      <div id="role-group" class="hidden">
+        <label for="role">I am a</label>
+        <select id="role">
+          <option value="buyer">Buyer</option>
+          <option value="developer">Developer</option>
+        </select>
+      </div>
+
+      <button type="submit" id="submit" class="submit">Log in</button>
+      <div id="message" class="message" role="alert"></div>
+    </form>
+  </main>
+
+  <script type="module">
+    import { signIn, signUp, getUser, getRole, dashboardFor } from './assets/js/auth.js';
+
+    const $ = (id) => document.getElementById(id);
+    let mode = 'login';
+
+    function setMode(next) {
+      mode = next;
+      $('tab-login').classList.toggle('active', mode === 'login');
+      $('tab-signup').classList.toggle('active', mode === 'signup');
+      $('name-group').classList.toggle('hidden', mode === 'login');
+      $('role-group').classList.toggle('hidden', mode === 'login');
+      $('submit').textContent = mode === 'login' ? 'Log in' : 'Create account';
+      $('password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+      showMessage('');
+    }
+
+    function showMessage(text, type = 'error') {
+      const box = $('message');
+      box.textContent = text;
+      box.className = text ? `message ${type}` : 'message';
+    }
+
+    $('tab-login').addEventListener('click', () => setMode('login'));
+    $('tab-signup').addEventListener('click', () => setMode('signup'));
+
+    // Already logged in? Go straight to the right dashboard.
+    getUser().then((user) => {
+      if (user) window.location.href = dashboardFor(getRole(user));
+    });
+
+    $('auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('email').value.trim();
+      const password = $('password').value;
+
+      if (!email || password.length < 6) {
+        return showMessage('Enter a valid email and a password of at least 6 characters.');
+      }
+      if (mode === 'signup' && !$('fullName').value.trim()) {
+        return showMessage('Please enter your full name.');
+      }
+
+      $('submit').disabled = true;
+      showMessage('');
+      try {
+        let result;
+        if (mode === 'signup') {
+          result = await signUp({
+            fullName: $('fullName').value.trim(),
+            email,
+            password,
+            role: $('role').value,
+          });
+          if (!result.session) {
+            showMessage('Account created. Check your email to confirm it, then log in.', 'ok');
+            setMode('login');
+            return;
+          }
+        } else {
+          result = await signIn({ email, password });
+        }
+        window.location.href = dashboardFor(getRole(result.session?.user || result.user));
+      } catch (err) {
+        showMessage(err.message || 'Something went wrong. Please try again.');
+      } finally {
+        $('submit').disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
